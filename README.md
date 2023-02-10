@@ -28,3 +28,11 @@
 ### Particle
 ### `#include <nada/particle.hpp>`
 TODO
+
+### Gif
+### `#include <nada/gif.hpp>`
+TODO
+
+### Graphic
+### `#include <nada/graphic.hpp>`
+TODO

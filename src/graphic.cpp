@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <webp/decode.h>
 #include <functional>
-#include <nada/grafik.hpp>
+#include <nada/graphic.hpp>
 
 using namespace nada;
 

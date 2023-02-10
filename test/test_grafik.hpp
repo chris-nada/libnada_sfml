@@ -1,7 +1,7 @@
 #pragma once
 
 #include <doctest.h>
-#include <nada/grafik.hpp>
+#include <nada/graphic.hpp>
 #include <functional>
 
 using namespace nada;

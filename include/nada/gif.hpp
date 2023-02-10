@@ -1,6 +1,6 @@
 #pragma once
 
-#include "grafik.hpp"
+#include "graphic.hpp"
 #include <vector>
 #include <SFML/System/Clock.hpp>
 
@@ -8,6 +8,7 @@ class gd_GIF;
 
 namespace nada {
 
+/// Adds gif support to `Graphic`.
 class Gif final : public Graphic {
 
 public:
