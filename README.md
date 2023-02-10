@@ -12,7 +12,7 @@
 + tests also provide more usage examples
 
 ## How to include in your project
-1. Git clone or copy folder `libnada` to the same directory your `CMakeLists.txt` is in.
+1. Git clone or copy folder `libnada_sfml` to the same directory your `CMakeLists.txt` is in.
 2. Add these 3 lines to your `CMakeLists.txt`
 ```cmake
     ...
