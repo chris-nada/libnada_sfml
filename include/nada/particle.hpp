@@ -2,7 +2,11 @@
 
 #include <SFML/Graphics/CircleShape.hpp>
 
-/// Einfaches, auf Kreisen basierendes Partikelsystem.
+namespace sf { class RenderWindow; }
+
+namespace nada {
+
+/// Einfaches, auf Kreisen basierendes Partikelsystem. // TODO translate doc
 class Particle final {
 
 public:
@@ -41,7 +45,8 @@ public:
              float geschwindigkeit = 1.5f, float fade = 0.999f,
              float jitter = 2.f, bool respawn = true);
 
-    void draw();
+    /// Draws this to given window.
+    void draw(sf::RenderWindow* window);
 
     void set_position(const sf::Vector2f& position);
 
@@ -112,3 +117,5 @@ private:
     bool respawn;
 
 };
+
+} // namespace nada

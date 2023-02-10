@@ -1,4 +1,7 @@
 #include <nada/particle.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+
+using namespace nada;
 
 Particle::Particle() :
     Particle(
@@ -36,7 +39,7 @@ Particle::Particle(
     create_new();
 }
 
-void Particle::draw() {
+void Particle::draw(sf::RenderWindow* window) {
 
     // Alte Particle entfernen
     particles.erase(
@@ -55,7 +58,7 @@ void Particle::draw() {
     if (respawn) create_new();
 
     // Alle zeichnen
-    //for (const auto& k : particles) Gui::fenster->draw(k); // TODO
+    for (const auto& k : particles) window->draw(k); // TODO
 
     // Altern lassen
     for (sf::CircleShape& k : particles) {

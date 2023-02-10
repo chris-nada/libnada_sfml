@@ -3,6 +3,7 @@
 #include <doctest.h>
 
 #include "test_particle.hpp"
+#include "test_grafik.hpp"
 
 int main(int argc, char** argv) {
     doctest::Context context;
