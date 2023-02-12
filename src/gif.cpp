@@ -3,7 +3,7 @@
 #include "thirdparty/gifdec.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Texture.hpp>
-#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 
 using namespace nada;
 
@@ -35,12 +35,12 @@ void Gif::next_frame(bool force) {
     gif_timer.restart();
     frame_n++;
     if (frame_n >= frames.size()) frame_n = 0;
-    sprite->setTexture(*frames.at(frame_n).get());
+    rect->setTexture(frames.at(frame_n).get());
 }
 
 void Gif::draw(sf::RenderWindow* fenster) {
     next_frame(false);
-    fenster->draw(*sprite);
+    fenster->draw(*rect);
 }
 
 void Gif::cache_frames() { // TODO perf extremely hot
