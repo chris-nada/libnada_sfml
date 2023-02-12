@@ -6,9 +6,9 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Texture.hpp>
-#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 
-namespace sf { class Sprite; class Texture; class RenderWindow; }
+namespace sf { class RectangleShape; class Texture; class RenderWindow; }
 
 namespace nada {
 
@@ -27,6 +27,8 @@ public:
      *                  over to safe loading times (from filesystem-IO).
      */
     explicit Graphic(const std::string& texture_path, bool is_shared = false);
+
+    virtual ~Graphic();
 
     /// Draw this to given window.
     virtual void draw(sf::RenderWindow* window);
@@ -120,9 +122,9 @@ protected:
 
     std::string textur_pfad;
 
-    std::unique_ptr<sf::Texture> textur;
+    sf::Texture* textur;
 
-    std::unique_ptr<sf::Sprite> sprite;
+    std::unique_ptr<sf::RectangleShape> rect;
 
     std::unique_ptr<uint8_t> webp_data;
 

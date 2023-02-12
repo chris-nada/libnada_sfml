@@ -1,14 +1,11 @@
+#include <nada/graphic.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/Graphics/Texture.hpp>
-#include <SFML/Graphics/Sprite.hpp>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <fstream>
 #include <filesystem>
-#include <webp/decode.h>
 #include <functional>
-#include <nada/graphic.hpp>
+#include <webp/decode.h>
 
 using namespace nada;
 
@@ -19,38 +16,60 @@ Graphic::Graphic(const std::string& textur_pfad, bool is_shared) :
         is_flipped(false),
         textur_pfad(textur_pfad)
 {
-    // Textur noch nicht vorhanden
-    textur = std::make_unique<sf::Texture>();
+    // Is already cached?
+    static std::unordered_map<std::string, sf::Texture*> cache;
 
-    // webp laden
-    if (textur_pfad.find(".webp") != std::string::npos) {
-        if (std::ifstream in(textur_pfad); in.good()) {
-            const std::string data = std::invoke([&](){ std::ostringstream oss; oss << in.rdbuf(); return oss.str(); });
-            int width = 0, height = 0;
-            webp_data.reset(WebPDecodeRGBA((uint8_t*)data.data(), data.size(), &width, &height));
-            if (webp_data == nullptr) {
-                std::cerr << "Graphic() webp texture " << textur_pfad << " could not be loaded.\n";
-                textur.reset(nullptr);
-            }
-            else {
-                textur->create(width, height);
-                textur->update(webp_data.get(), width, height, 0, 0);
+    // Textur noch nicht vorhanden?
+    textur = nullptr;
+    if (is_shared && cache.count(textur_pfad)) textur = cache[textur_pfad];
+
+    if (textur ==nullptr) {
+        textur = new sf::Texture;
+
+        // webp laden
+        if (textur_pfad.find(".webp")!=std::string::npos) {
+            if (std::ifstream in(textur_pfad); in.good()) {
+                const std::string data = std::invoke([&]() {
+                    std::ostringstream oss;
+                    oss << in.rdbuf();
+                    return oss.str();
+                });
+                int width = 0, height = 0;
+                webp_data.reset(WebPDecodeRGBA((uint8_t*) data.data(), data.size(), &width, &height));
+                if (webp_data==nullptr) {
+                    std::cerr << "Graphic() webp texture " << textur_pfad << " could not be loaded.\n";
+                    delete textur;
+                    textur = nullptr;
+                }
+                else {
+                    textur->create(width, height);
+                    textur->update(webp_data.get(), width, height, 0, 0);
+                }
             }
         }
-    }
-    // andere formate
-    else if (textur->loadFromFile(textur_pfad)) std::cout << "\t\tGraphic() loaded from " << textur_pfad << '\n';
-    else {
-        std::cerr << "Graphic() texture could not be loaded from " << textur_pfad << "\n";
-        textur.reset(nullptr);
+            // andere formate
+        else if (textur->loadFromFile(textur_pfad)) std::cout << "\t\tGraphic() loaded from " << textur_pfad << '\n';
+        else {
+            std::cerr << "Graphic() texture could not be loaded from " << textur_pfad << "\n";
+            delete textur;
+            textur = nullptr;
+        }
     }
 
     // Textur setzen
-    sprite = std::make_unique<sf::Sprite>();
-    if (textur) sprite->setTexture(*textur);
+    rect = std::make_unique<sf::RectangleShape>();
+    if (textur) {
+        rect->setTexture(textur, true);
+        if (is_shared) cache[textur_pfad] = textur;
+    }
 }
 
-Graphic::operator bool() const { return textur!=nullptr; }
+Graphic::~Graphic() {
+    if (!is_shared) delete textur;
+}
+
+bool Graphic::good() const { return textur != nullptr; }
+Graphic::operator bool() const { return textur != nullptr; }
 
 bool Graphic::operator==(const Graphic& rhs) const { return textur==rhs.textur; }
 
@@ -58,18 +77,18 @@ bool Graphic::operator!=(const Graphic& rhs) const { return !(rhs==*this); }
 
 void Graphic::set_flip(bool flip) {
     if (flip == is_flipped) return;
-    const auto& r = sprite->getTextureRect();
+    const auto& r = rect->getTextureRect();
     if (flip) {
-        sprite->setTextureRect(sf::IntRect(std::abs(r.width), 0, -std::abs(r.width), r.height));
+        rect->setTextureRect(sf::IntRect(std::abs(r.width), 0, -std::abs(r.width), r.height));
     }
     else {
-        sprite->setTextureRect(sf::IntRect(0, 0, std::abs(r.width), r.height));
+        rect->setTextureRect(sf::IntRect(0, 0, std::abs(r.width), r.height));
     }
     is_flipped = flip;
 }
 
 void Graphic::set_size(const sf::Vector2f& size) {
-    sprite->setScale(size.x / textur->getSize().x, size.y / textur->getSize().y);
+    rect->setScale(size.x / textur->getSize().x, size.y / textur->getSize().y);
 }
 
 sf::Vector2f Graphic::size_f() const {
@@ -77,7 +96,7 @@ sf::Vector2f Graphic::size_f() const {
 }
 
 bool Graphic::is_inside(float x, float y) const {
-    return sprite->getGlobalBounds().contains(x, y);
+    return rect->getGlobalBounds().contains(x, y);
 }
 
 const std::string& Graphic::get_info() const {
@@ -85,13 +104,13 @@ const std::string& Graphic::get_info() const {
 }
 
 void Graphic::draw(sf::RenderWindow* fenster) {
-    fenster->draw(*sprite);
+    fenster->draw(*rect);
 }
 
 void Graphic::set_opacity(float faktor) {
-    auto color = sprite->getColor();
+    auto color = rect->getFillColor();
     color.a = 0xFF * faktor;
-    sprite->setColor(color);
+    rect->setFillColor(color);
 }
 
 void Graphic::delete_file() {
@@ -102,30 +121,28 @@ void Graphic::delete_file() {
     catch (const std::exception& e) {}
 }
 
-void Graphic::set_color(const sf::Color& color) { sprite->setColor(color); }
+void Graphic::set_color(const sf::Color& color) { rect->setFillColor(color); }
 
-void Graphic::set_size(float scale) { sprite->setScale(scale, scale); }
+void Graphic::set_size(float scale) { rect->setScale(scale, scale); }
 
-void Graphic::set_x(float x) { sprite->setPosition(x, sprite->getPosition().y); }
+void Graphic::set_x(float x) { rect->setPosition(x, rect->getPosition().y); }
 
-void Graphic::set_y(float y) { sprite->setPosition(sprite->getPosition().x, y); }
+void Graphic::set_y(float y) { rect->setPosition(rect->getPosition().x, y); }
 
-void Graphic::set_pos(const sf::Vector2f& pos) { sprite->setPosition(pos); }
+void Graphic::set_pos(const sf::Vector2f& pos) { rect->setPosition(pos); }
 
-float Graphic::size_x() const { return textur->getSize().x * sprite->getScale().x; }
+float Graphic::size_x() const { return textur->getSize().x * rect->getScale().x; }
 
-float Graphic::size_y() const { return textur->getSize().y * sprite->getScale().y; }
+float Graphic::size_y() const { return textur->getSize().y * rect->getScale().y; }
 
 sf::Vector2u Graphic::size() const { return textur->getSize(); }
 
-bool Graphic::good() const { return textur!=nullptr; }
+sf::Texture* Graphic::data() const { return textur; }
 
-sf::Texture* Graphic::data() const { return textur.get(); }
+const sf::Vector2f& Graphic::pos() const { return rect->getPosition(); }
 
-const sf::Vector2f& Graphic::pos() const { return sprite->getPosition(); }
+float Graphic::x() const { return rect->getPosition().x; }
 
-float Graphic::x() const { return sprite->getPosition().x; }
-
-float Graphic::y() const { return sprite->getPosition().y; }
+float Graphic::y() const { return rect->getPosition().y; }
 
 void Graphic::set_info(const std::string& info) { this->info = info; }
